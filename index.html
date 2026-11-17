@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Weather Visualizer</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: 'Inter', sans-serif;
+        background: #0a0a1a;
+        color: #fff;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        overflow-x: hidden;
+      }
+
+      header {
+        width: 100%;
+        padding: 24px 40px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        z-index: 10;
+      }
+
+      header h1 {
+        font-size: 1.3rem;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+        background: linear-gradient(135deg, #60a5fa, #a78bfa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      header span {
+        font-size: 0.8rem;
+        color: #555;
+        font-weight: 300;
+      }
+
+      .search-container {
+        margin-top: 40px;
+        display: flex;
+        gap: 10px;
+        z-index: 10;
+      }
+
+      .search-container input {
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        padding: 14px 24px;
+        font-size: 1rem;
+        color: #fff;
+        font-family: 'Inter', sans-serif;
+        width: 300px;
+        outline: none;
+        transition: border-color 0.2s, box-shadow 0.2s;
+      }
+
+      .search-container input:focus {
+        border-color: rgba(96, 165, 250, 0.5);
+        box-shadow: 0 0 20px rgba(96, 165, 250, 0.15);
+      }
+
+      .search-container input::placeholder {
+        color: #555;
+      }
+
+      .search-container button {
+        background: linear-gradient(135deg, #3b82f6, #7c3aed);
+        border: none;
+        border-radius: 12px;
+        padding: 14px 28px;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #fff;
+        cursor: pointer;
+        font-family: 'Inter', sans-serif;
+        transition: transform 0.15s, box-shadow 0.2s;
+      }
+
+      .search-container button:hover {
+        transform: scale(1.03);
+        box-shadow: 0 4px 20px rgba(96, 165, 250, 0.3);
+      }
+
+      .search-container button:active {
+        transform: scale(0.98);
+      }
+
+      #canvas-container {
+        margin-top: 20px;
+        border-radius: 20px;
+        overflow: hidden;
+        box-shadow: 0 0 60px rgba(96, 165, 250, 0.08);
+      }
+
+      .info-cards {
+        display: flex;
+        gap: 16px;
+        margin-top: 30px;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 0 20px;
+        z-index: 10;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 16px;
+        padding: 20px 28px;
+        min-width: 140px;
+        text-align: center;
+        backdrop-filter: blur(10px);
+        transition: transform 0.2s, border-color 0.3s;
+      }
+
+      .card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(96, 165, 250, 0.3);
+      }
+
+      .card .label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: #666;
+        margin-bottom: 6px;
+      }
+
+      .card .value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #60a5fa, #a78bfa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .card .unit {
+        font-size: 0.8rem;
+        color: #888;
+        font-weight: 300;
+      }
+
+      .error-msg {
+        margin-top: 20px;
+        color: #f87171;
+        font-size: 0.9rem;
+        z-index: 10;
+        min-height: 1.2em;
+      }
+
+      footer {
+        margin-top: auto;
+        padding: 30px;
+        font-size: 0.75rem;
+        color: #333;
+        text-align: center;
+      }
+
+      footer a {
+        color: #555;
+        text-decoration: none;
+      }
+
+      footer a:hover {
+        color: #60a5fa;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>⛅ Weather Visualizer</h1>
+      <span>Powered by OpenWeatherMap + p5.js</span>
+    </header>
+
+    <div class="search-container">
+      <input type="text" id="cityInput" placeholder="Enter a city name…" value="New York" />
+      <button id="askBtn">Search</button>
+    </div>
+
+    <p class="error-msg" id="errorMsg"></p>
+
+    <div id="canvas-container"></div>
+
+    <div class="info-cards" id="infoCards" style="display:none;">
+      <div class="card">
+        <div class="label">Temperature</div>
+        <div class="value" id="cardTemp">—</div>
+        <div class="unit">°F</div>
+      </div>
+      <div class="card">
+        <div class="label">Feels Like</div>
+        <div class="value" id="cardFeels">—</div>
+        <div class="unit">°F</div>
+      </div>
+      <div class="card">
+        <div class="label">Humidity</div>
+        <div class="value" id="cardHumidity">—</div>
+        <div class="unit">%</div>
+      </div>
+      <div class="card">
+        <div class="label">Wind</div>
+        <div class="value" id="cardWind">—</div>
+        <div class="unit">mph</div>
+      </div>
+      <div class="card">
+        <div class="label">Condition</div>
+        <div class="value" id="cardCondition">—</div>
+        <div class="unit" id="cardCity">—</div>
+      </div>
+    </div>
+
+    <footer>
+      Based on <a href="https://editor.p5js.org/dano/sketches/ypuAZvexS" target="_blank">dano's P5.js Weather sketch</a>
+    </footer>
+
+    <script>
+      // ── Weather API ──────────────────────────────────────────
+      const API_URL = "https://api.openweathermap.org/data/2.5/weather?q=";
+      const API_KEY = "&units=imperial&appid=ec3dedc7f1f374ef65f3129c32569774";
+
+      let weather = null;
+      let targetTemp = 0;
+      let displayTemp = 0;
+      let query = "New York";
+      let particles = [];
+      let errorMsg = "";
+
+      // ── DOM refs ─────────────────────────────────────────────
+      const cityInput = document.getElementById("cityInput");
+      const askBtn = document.getElementById("askBtn");
+      const errorEl = document.getElementById("errorMsg");
+
+      askBtn.addEventListener("click", ask);
+      cityInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") ask();
+      });
+
+      async function ask() {
+        query = cityInput.value.trim();
+        if (!query) return;
+        errorEl.textContent = "";
+
+        try {
+          const res = await fetch(API_URL + encodeURIComponent(query) + API_KEY);
+          const data = await res.json();
+
+          if (data.cod !== 200) {
+            errorEl.textContent = `City "${query}" not found. Try another name.`;
+            weather = null;
+            document.getElementById("infoCards").style.display = "none";
+            return;
+          }
+
+          weather = data;
+          targetTemp = weather.main.temp;
+
+          // Update info cards
+          document.getElementById("infoCards").style.display = "flex";
+          document.getElementById("cardTemp").textContent = Math.round(weather.main.temp);
+          document.getElementById("cardFeels").textContent = Math.round(weather.main.feels_like);
+          document.getElementById("cardHumidity").textContent = weather.main.humidity;
+          document.getElementById("cardWind").textContent = Math.round(weather.wind.speed);
+          document.getElementById("cardCondition").textContent = weather.weather[0].main;
+          document.getElementById("cardCity").textContent = weather.name + ", " + weather.sys.country;
+
+          // Reset particles for new city
+          particles = [];
+        } catch (err) {
+          errorEl.textContent = "Could not fetch weather data. Check your connection.";
+          weather = null;
+        }
+      }
+
+      // ── p5.js Sketch ────────────────────────────────────────
+      const sketch = (p) => {
+        let canvasW, canvasH;
+
+        p.setup = function () {
+          canvasW = Math.min(700, window.innerWidth - 40);
+          canvasH = 380;
+          let canvas = p.createCanvas(canvasW, canvasH);
+          canvas.parent("canvas-container");
+          p.textFont("Inter");
+          p.noStroke();
+          ask(); // initial fetch
+        };
+
+        p.draw = function () {
+          // Smooth background based on temperature
+          let bgR, bgG, bgB;
+          if (weather) {
+            // Cold → blue,  Warm → purple,  Hot → warm orange
+            let t = p.map(targetTemp, 0, 110, 0, 1, true);
+            bgR = p.lerp(10, 30, t);
+            bgG = p.lerp(10, 10, t);
+            bgB = p.lerp(40, 20, t);
+          } else {
+            bgR = 10; bgG = 10; bgB = 26;
+          }
+          p.background(bgR, bgG, bgB);
+
+          // Subtle grid
+          p.stroke(255, 8);
+          p.strokeWeight(0.5);
+          for (let x = 0; x < canvasW; x += 40) p.line(x, 0, x, canvasH);
+          for (let y = 0; y < canvasH; y += 40) p.line(0, y, canvasW, y);
+          p.noStroke();
+
+          if (!weather) {
+            p.fill(80);
+            p.textSize(16);
+            p.textAlign(p.CENTER, p.CENTER);
+            p.text("Search a city to see the weather", canvasW / 2, canvasH / 2);
+            return;
+          }
+
+          // Smooth lerp temperature for animation
+          displayTemp = p.lerp(displayTemp, targetTemp, 0.04);
+
+          let cx = canvasW / 2;
+          let cy = canvasH / 2;
+
+          // Pulsing glow rings
+          let baseSize = p.map(displayTemp, -20, 120, 30, 300, true);
+          let pulse = p.sin(p.frameCount * 0.02) * 8;
+
+          for (let i = 4; i >= 0; i--) {
+            let s = baseSize + i * 30 + pulse;
+            let alpha = p.map(i, 0, 4, 40, 5);
+
+            // Color based on temperature
+            let tempNorm = p.map(displayTemp, 0, 110, 0, 1, true);
+            let r = p.lerp(60, 250, tempNorm);
+            let g = p.lerp(165, 100, tempNorm);
+            let b = p.lerp(250, 80, tempNorm);
+
+            p.fill(r, g, b, alpha);
+            p.ellipse(cx, cy, s, s);
+          }
+
+          // Core circle
+          let coreAlpha = 180 + p.sin(p.frameCount * 0.03) * 40;
+          let tempNorm = p.map(displayTemp, 0, 110, 0, 1, true);
+          let r = p.lerp(60, 250, tempNorm);
+          let g = p.lerp(165, 100, tempNorm);
+          let b = p.lerp(250, 80, tempNorm);
+          p.fill(r, g, b, coreAlpha);
+          p.ellipse(cx, cy, baseSize, baseSize);
+
+          // Inner bright core
+          p.fill(255, 60 + p.sin(p.frameCount * 0.05) * 20);
+          p.ellipse(cx, cy, baseSize * 0.3, baseSize * 0.3);
+
+          // Floating particles
+          if (particles.length < 60 && p.random() < 0.3) {
+            particles.push({
+              x: cx + p.random(-baseSize / 2, baseSize / 2),
+              y: cy + p.random(-baseSize / 2, baseSize / 2),
+              size: p.random(1, 4),
+              vx: p.random(-0.5, 0.5),
+              vy: p.random(-1.5, -0.3),
+              life: 1.0,
+            });
+          }
+
+          for (let i = particles.length - 1; i >= 0; i--) {
+            let pt = particles[i];
+            pt.x += pt.vx;
+            pt.y += pt.vy;
+            pt.life -= 0.008;
+
+            p.fill(r, g, b, pt.life * 120);
+            p.ellipse(pt.x, pt.y, pt.size, pt.size);
+
+            if (pt.life <= 0) particles.splice(i, 1);
+          }
+
+          // Temperature text
+          p.fill(255, 230);
+          p.textAlign(p.CENTER, p.CENTER);
+          p.textSize(42);
+          p.textStyle(p.BOLD);
+          p.text(Math.round(displayTemp) + "°F", cx, cy);
+
+          p.textSize(14);
+          p.textStyle(p.NORMAL);
+          p.fill(255, 150);
+          p.text(weather.name + ", " + weather.sys.country, cx, cy + 30);
+
+          // Weather condition
+          p.textSize(12);
+          p.fill(255, 100);
+          p.text(weather.weather[0].description, cx, cy + 50);
+        };
+
+        p.windowResized = function () {
+          canvasW = Math.min(700, window.innerWidth - 40);
+          p.resizeCanvas(canvasW, 380);
+        };
+      };
+
+      new p5(sketch);
+    </script>
+  </body>
+</html>
