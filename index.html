@@ -3,16 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Weather Visualizer</title>
+    <title>Weather Guesser</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap');
 
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
+      * { margin: 0; padding: 0; box-sizing: border-box; }
 
       body {
         font-family: 'Inter', sans-serif;
@@ -27,7 +23,7 @@
 
       header {
         width: 100%;
-        padding: 24px 40px;
+        padding: 20px 40px;
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -36,253 +32,412 @@
 
       header h1 {
         font-size: 1.3rem;
-        font-weight: 600;
+        font-weight: 700;
         letter-spacing: -0.02em;
-        background: linear-gradient(135deg, #60a5fa, #a78bfa);
+        background: linear-gradient(135deg, #facc15, #f97316);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
       }
 
-      header span {
-        font-size: 0.8rem;
-        color: #555;
-        font-weight: 300;
+      .score-bar {
+        display: flex;
+        gap: 20px;
+        font-size: 0.85rem;
+        color: #888;
       }
 
-      .search-container {
-        margin-top: 40px;
+      .score-bar span strong {
+        color: #fff;
+        font-weight: 700;
+      }
+
+      .trophy-row {
         display: flex;
-        gap: 10px;
+        gap: 4px;
+        margin-top: 10px;
+        min-height: 30px;
+        flex-wrap: wrap;
+        justify-content: center;
+        padding: 0 20px;
+        z-index: 10;
+        max-width: 700px;
+      }
+
+      .trophy {
+        font-size: 1.3rem;
+        animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      }
+
+      @keyframes popIn {
+        0% { transform: scale(0); opacity: 0; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+
+      .game-area {
+        margin-top: 16px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
         z-index: 10;
       }
 
-      .search-container input {
+      .city-prompt {
+        font-size: 0.85rem;
+        color: #666;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        margin-bottom: 6px;
+      }
+
+      .city-name {
+        font-size: 2.4rem;
+        font-weight: 900;
+        letter-spacing: -0.03em;
+        background: linear-gradient(135deg, #60a5fa, #a78bfa);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 4px;
+      }
+
+      .city-country {
+        font-size: 0.9rem;
+        color: #555;
+        margin-bottom: 20px;
+      }
+
+      .guess-container {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .guess-container input {
         background: rgba(255, 255, 255, 0.07);
         border: 1px solid rgba(255, 255, 255, 0.12);
-        border-radius: 12px;
-        padding: 14px 24px;
-        font-size: 1rem;
+        border-radius: 14px;
+        padding: 14px 20px;
+        font-size: 1.4rem;
+        font-weight: 700;
         color: #fff;
         font-family: 'Inter', sans-serif;
-        width: 300px;
+        width: 140px;
+        text-align: center;
         outline: none;
         transition: border-color 0.2s, box-shadow 0.2s;
       }
 
-      .search-container input:focus {
-        border-color: rgba(96, 165, 250, 0.5);
-        box-shadow: 0 0 20px rgba(96, 165, 250, 0.15);
+      .guess-container input:focus {
+        border-color: rgba(250, 204, 21, 0.5);
+        box-shadow: 0 0 24px rgba(250, 204, 21, 0.12);
       }
 
-      .search-container input::placeholder {
+      .guess-container input::placeholder {
+        color: #444;
+        font-weight: 400;
+        font-size: 1rem;
+      }
+
+      .guess-container .unit-label {
+        font-size: 1.1rem;
         color: #555;
+        font-weight: 600;
       }
 
-      .search-container button {
-        background: linear-gradient(135deg, #3b82f6, #7c3aed);
+      .guess-container button {
+        background: linear-gradient(135deg, #facc15, #f97316);
         border: none;
-        border-radius: 12px;
+        border-radius: 14px;
         padding: 14px 28px;
         font-size: 1rem;
-        font-weight: 600;
-        color: #fff;
+        font-weight: 700;
+        color: #000;
         cursor: pointer;
         font-family: 'Inter', sans-serif;
         transition: transform 0.15s, box-shadow 0.2s;
       }
 
-      .search-container button:hover {
+      .guess-container button:hover {
         transform: scale(1.03);
-        box-shadow: 0 4px 20px rgba(96, 165, 250, 0.3);
+        box-shadow: 0 4px 24px rgba(250, 204, 21, 0.3);
       }
 
-      .search-container button:active {
-        transform: scale(0.98);
-      }
+      .guess-container button:active { transform: scale(0.97); }
 
       #canvas-container {
-        margin-top: 20px;
+        margin-top: 16px;
         border-radius: 20px;
         overflow: hidden;
-        box-shadow: 0 0 60px rgba(96, 165, 250, 0.08);
+        box-shadow: 0 0 60px rgba(96, 165, 250, 0.06);
       }
 
-      .info-cards {
-        display: flex;
-        gap: 16px;
-        margin-top: 30px;
-        flex-wrap: wrap;
-        justify-content: center;
-        padding: 0 20px;
-        z-index: 10;
-      }
-
-      .card {
-        background: rgba(255, 255, 255, 0.05);
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 16px;
-        padding: 20px 28px;
-        min-width: 140px;
+      .result-banner {
+        margin-top: 16px;
+        padding: 14px 28px;
+        border-radius: 14px;
+        font-size: 1rem;
+        font-weight: 600;
         text-align: center;
-        backdrop-filter: blur(10px);
-        transition: transform 0.2s, border-color 0.3s;
-      }
-
-      .card:hover {
-        transform: translateY(-2px);
-        border-color: rgba(96, 165, 250, 0.3);
-      }
-
-      .card .label {
-        font-size: 0.7rem;
-        text-transform: uppercase;
-        letter-spacing: 0.1em;
-        color: #666;
-        margin-bottom: 6px;
-      }
-
-      .card .value {
-        font-size: 1.5rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, #60a5fa, #a78bfa);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-
-      .card .unit {
-        font-size: 0.8rem;
-        color: #888;
-        font-weight: 300;
-      }
-
-      .error-msg {
-        margin-top: 20px;
-        color: #f87171;
-        font-size: 0.9rem;
+        min-height: 50px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
         z-index: 10;
-        min-height: 1.2em;
+        transition: opacity 0.3s;
+      }
+
+      .result-banner.hidden { opacity: 0; }
+      .result-banner.star {
+        background: rgba(250, 204, 21, 0.12);
+        border: 1px solid rgba(250, 204, 21, 0.3);
+        color: #facc15;
+      }
+      .result-banner.cloud {
+        background: rgba(96, 165, 250, 0.12);
+        border: 1px solid rgba(96, 165, 250, 0.3);
+        color: #60a5fa;
+      }
+      .result-banner.miss {
+        background: rgba(248, 113, 113, 0.1);
+        border: 1px solid rgba(248, 113, 113, 0.25);
+        color: #f87171;
+      }
+
+      .next-btn {
+        margin-top: 14px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.12);
+        border-radius: 12px;
+        padding: 12px 32px;
+        color: #fff;
+        font-family: 'Inter', sans-serif;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+        z-index: 10;
+        transition: background 0.2s;
+        display: none;
+      }
+      .next-btn:hover { background: rgba(255,255,255,0.14); }
+
+      .hint-text {
+        margin-top: 10px;
+        font-size: 0.75rem;
+        color: #444;
+        z-index: 10;
       }
 
       footer {
         margin-top: auto;
-        padding: 30px;
-        font-size: 0.75rem;
+        padding: 24px;
+        font-size: 0.72rem;
         color: #333;
-        text-align: center;
       }
-
-      footer a {
-        color: #555;
-        text-decoration: none;
-      }
-
-      footer a:hover {
-        color: #60a5fa;
-      }
+      footer a { color: #555; text-decoration: none; }
+      footer a:hover { color: #60a5fa; }
     </style>
   </head>
   <body>
     <header>
-      <h1>⛅ Weather Visualizer</h1>
-      <span>Powered by OpenWeatherMap + p5.js</span>
+      <h1>🌦️ Weather Guesser</h1>
+      <div class="score-bar">
+        <span>⭐ Stars: <strong id="starCount">0</strong></span>
+        <span>☁️ Clouds: <strong id="cloudCount">0</strong></span>
+        <span>Round: <strong id="roundCount">1</strong></span>
+        <span>Streak: <strong id="streakCount">0</strong>🔥</span>
+      </div>
     </header>
 
-    <div class="search-container">
-      <input type="text" id="cityInput" placeholder="Enter a city name…" value="New York" />
-      <button id="askBtn">Search</button>
+    <div class="trophy-row" id="trophyRow"></div>
+
+    <div class="game-area">
+      <div class="city-prompt">What's the temperature in…</div>
+      <div class="city-name" id="cityName">Loading…</div>
+      <div class="city-country" id="cityCountry"></div>
+
+      <div class="guess-container" id="guessContainer">
+        <input type="number" id="guessInput" placeholder="72" autofocus />
+        <span class="unit-label">°F</span>
+        <button id="guessBtn">Guess!</button>
+      </div>
     </div>
 
-    <p class="error-msg" id="errorMsg"></p>
+    <div class="result-banner hidden" id="resultBanner"></div>
+    <button class="next-btn" id="nextBtn">Next City →</button>
+    <p class="hint-text" id="hintText">Type your best guess for the current temperature!</p>
 
     <div id="canvas-container"></div>
 
-    <div class="info-cards" id="infoCards" style="display:none;">
-      <div class="card">
-        <div class="label">Temperature</div>
-        <div class="value" id="cardTemp">—</div>
-        <div class="unit">°F</div>
-      </div>
-      <div class="card">
-        <div class="label">Feels Like</div>
-        <div class="value" id="cardFeels">—</div>
-        <div class="unit">°F</div>
-      </div>
-      <div class="card">
-        <div class="label">Humidity</div>
-        <div class="value" id="cardHumidity">—</div>
-        <div class="unit">%</div>
-      </div>
-      <div class="card">
-        <div class="label">Wind</div>
-        <div class="value" id="cardWind">—</div>
-        <div class="unit">mph</div>
-      </div>
-      <div class="card">
-        <div class="label">Condition</div>
-        <div class="value" id="cardCondition">—</div>
-        <div class="unit" id="cardCity">—</div>
-      </div>
-    </div>
-
     <footer>
-      Based on <a href="https://editor.p5js.org/dano/sketches/ypuAZvexS" target="_blank">dano's P5.js Weather sketch</a>
+      Based on <a href="https://editor.p5js.org/dano/sketches/ypuAZvexS" target="_blank">dano's P5.js Weather sketch</a> · Powered by OpenWeatherMap
     </footer>
 
     <script>
-      // ── Weather API ──────────────────────────────────────────
+      // ── Config ───────────────────────────────────────────────
       const API_URL = "https://api.openweathermap.org/data/2.5/weather?q=";
       const API_KEY = "&units=imperial&appid=ec3dedc7f1f374ef65f3129c32569774";
 
+      const CITIES = [
+        "Tokyo", "London", "Sydney", "Cairo", "Mumbai", "Paris",
+        "New York", "São Paulo", "Moscow", "Dubai", "Bangkok",
+        "Toronto", "Mexico City", "Nairobi", "Seoul", "Berlin",
+        "Rome", "Istanbul", "Buenos Aires", "Cape Town", "Singapore",
+        "Oslo", "Reykjavik", "Havana", "Lima", "Jakarta",
+        "Lagos", "Bogota", "Santiago", "Manila", "Hanoi",
+        "Lisbon", "Athens", "Amsterdam", "Stockholm", "Helsinki",
+        "Prague", "Vienna", "Dublin", "Zurich", "Barcelona",
+        "Marrakech", "Accra", "Casablanca", "Kuala Lumpur",
+        "Taipei", "Hong Kong", "Denver", "Anchorage", "Honolulu",
+        "Miami", "Chicago", "Seattle", "Phoenix", "Minneapolis"
+      ];
+
+      // ── State ────────────────────────────────────────────────
+      let currentCity = "";
+      let currentCountry = "";
+      let actualTemp = null;
       let weather = null;
-      let targetTemp = 0;
+      let stars = 0;
+      let clouds = 0;
+      let round = 1;
+      let streak = 0;
+      let trophies = [];
+      let gamePhase = "guessing"; // "guessing" | "revealed"
+      let revealedTemp = null;
+      let resultType = null; // "star" | "cloud" | "miss"
+      let usedCities = [];
+
+      // ── Animation state ──────────────────────────────────────
       let displayTemp = 0;
-      let query = "New York";
       let particles = [];
-      let errorMsg = "";
+      let floatingEmojis = [];
 
       // ── DOM refs ─────────────────────────────────────────────
-      const cityInput = document.getElementById("cityInput");
-      const askBtn = document.getElementById("askBtn");
-      const errorEl = document.getElementById("errorMsg");
+      const cityNameEl = document.getElementById("cityName");
+      const cityCountryEl = document.getElementById("cityCountry");
+      const guessInput = document.getElementById("guessInput");
+      const guessBtn = document.getElementById("guessBtn");
+      const guessContainer = document.getElementById("guessContainer");
+      const resultBanner = document.getElementById("resultBanner");
+      const nextBtn = document.getElementById("nextBtn");
+      const hintText = document.getElementById("hintText");
+      const trophyRow = document.getElementById("trophyRow");
 
-      askBtn.addEventListener("click", ask);
-      cityInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") ask();
+      guessBtn.addEventListener("click", submitGuess);
+      guessInput.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") submitGuess();
       });
+      nextBtn.addEventListener("click", nextRound);
 
-      async function ask() {
-        query = cityInput.value.trim();
-        if (!query) return;
-        errorEl.textContent = "";
+      // ── Game Logic ───────────────────────────────────────────
+      function pickCity() {
+        if (usedCities.length >= CITIES.length) usedCities = [];
+        let available = CITIES.filter(c => !usedCities.includes(c));
+        let city = available[Math.floor(Math.random() * available.length)];
+        usedCities.push(city);
+        return city;
+      }
+
+      async function loadCity() {
+        currentCity = pickCity();
+        cityNameEl.textContent = currentCity;
+        cityCountryEl.textContent = "Fetching…";
+        hintText.textContent = "Type your best guess for the current temperature!";
+        resultBanner.className = "result-banner hidden";
+        nextBtn.style.display = "none";
+        guessContainer.style.display = "flex";
+        guessInput.value = "";
+        guessInput.focus();
+        gamePhase = "guessing";
+        actualTemp = null;
+        weather = null;
+        revealedTemp = null;
+        resultType = null;
+        particles = [];
 
         try {
-          const res = await fetch(API_URL + encodeURIComponent(query) + API_KEY);
+          const res = await fetch(API_URL + encodeURIComponent(currentCity) + API_KEY);
           const data = await res.json();
-
-          if (data.cod !== 200) {
-            errorEl.textContent = `City "${query}" not found. Try another name.`;
-            weather = null;
-            document.getElementById("infoCards").style.display = "none";
-            return;
+          if (data.cod === 200) {
+            weather = data;
+            actualTemp = Math.round(data.main.temp);
+            currentCountry = data.sys.country;
+            cityCountryEl.textContent = currentCountry;
+          } else {
+            // skip bad city
+            loadCity();
           }
+        } catch {
+          cityCountryEl.textContent = "⚠️ Connection error";
+        }
+      }
 
-          weather = data;
-          targetTemp = weather.main.temp;
+      function submitGuess() {
+        if (gamePhase !== "guessing" || actualTemp === null) return;
+        let guess = parseInt(guessInput.value);
+        if (isNaN(guess)) {
+          hintText.textContent = "Please enter a number!";
+          return;
+        }
 
-          // Update info cards
-          document.getElementById("infoCards").style.display = "flex";
-          document.getElementById("cardTemp").textContent = Math.round(weather.main.temp);
-          document.getElementById("cardFeels").textContent = Math.round(weather.main.feels_like);
-          document.getElementById("cardHumidity").textContent = weather.main.humidity;
-          document.getElementById("cardWind").textContent = Math.round(weather.wind.speed);
-          document.getElementById("cardCondition").textContent = weather.weather[0].main;
-          document.getElementById("cardCity").textContent = weather.name + ", " + weather.sys.country;
+        gamePhase = "revealed";
+        revealedTemp = actualTemp;
+        let diff = Math.abs(guess - actualTemp);
 
-          // Reset particles for new city
-          particles = [];
-        } catch (err) {
-          errorEl.textContent = "Could not fetch weather data. Check your connection.";
-          weather = null;
+        if (diff === 0) {
+          resultType = "star";
+          stars++;
+          streak++;
+          trophies.push("⭐");
+          resultBanner.className = "result-banner star";
+          resultBanner.innerHTML = `⭐ PERFECT! It's exactly ${actualTemp}°F! You're a weather wizard!`;
+          spawnFloatingEmojis("⭐", 12);
+        } else if (diff <= 5) {
+          resultType = "cloud";
+          clouds++;
+          streak++;
+          trophies.push("☁️");
+          resultBanner.className = "result-banner cloud";
+          resultBanner.innerHTML = `☁️ So close! It's ${actualTemp}°F — you were only ${diff}° off!`;
+          spawnFloatingEmojis("☁️", 6);
+        } else {
+          resultType = "miss";
+          streak = 0;
+          resultBanner.className = "result-banner miss";
+          resultBanner.innerHTML = `❌ It's actually ${actualTemp}°F — you were ${diff}° off. Keep trying!`;
+        }
+
+        document.getElementById("starCount").textContent = stars;
+        document.getElementById("cloudCount").textContent = clouds;
+        document.getElementById("streakCount").textContent = streak;
+        guessContainer.style.display = "none";
+        nextBtn.style.display = "block";
+        hintText.textContent = `${weather.weather[0].description} · Feels like ${Math.round(weather.main.feels_like)}°F · Humidity ${weather.main.humidity}%`;
+        updateTrophyRow();
+      }
+
+      function nextRound() {
+        round++;
+        document.getElementById("roundCount").textContent = round;
+        loadCity();
+      }
+
+      function updateTrophyRow() {
+        // Show last 30 trophies
+        let recent = trophies.slice(-30);
+        trophyRow.innerHTML = recent.map(t => `<span class="trophy">${t}</span>`).join("");
+      }
+
+      function spawnFloatingEmojis(emoji, count) {
+        for (let i = 0; i < count; i++) {
+          floatingEmojis.push({
+            emoji,
+            x: Math.random() * 700,
+            y: 380 + Math.random() * 40,
+            vy: -(1 + Math.random() * 2),
+            vx: (Math.random() - 0.5) * 2,
+            life: 1.0,
+            size: 16 + Math.random() * 20,
+          });
         }
       }
 
@@ -292,125 +447,143 @@
 
         p.setup = function () {
           canvasW = Math.min(700, window.innerWidth - 40);
-          canvasH = 380;
+          canvasH = 340;
           let canvas = p.createCanvas(canvasW, canvasH);
           canvas.parent("canvas-container");
           p.textFont("Inter");
           p.noStroke();
-          ask(); // initial fetch
+          loadCity();
         };
 
         p.draw = function () {
-          // Smooth background based on temperature
-          let bgR, bgG, bgB;
-          if (weather) {
-            // Cold → blue,  Warm → purple,  Hot → warm orange
-            let t = p.map(targetTemp, 0, 110, 0, 1, true);
-            bgR = p.lerp(10, 30, t);
-            bgG = p.lerp(10, 10, t);
-            bgB = p.lerp(40, 20, t);
-          } else {
-            bgR = 10; bgG = 10; bgB = 26;
-          }
-          p.background(bgR, bgG, bgB);
+          p.background(10, 10, 26);
 
-          // Subtle grid
+          // Grid
           p.stroke(255, 8);
           p.strokeWeight(0.5);
           for (let x = 0; x < canvasW; x += 40) p.line(x, 0, x, canvasH);
           for (let y = 0; y < canvasH; y += 40) p.line(0, y, canvasW, y);
           p.noStroke();
 
-          if (!weather) {
-            p.fill(80);
-            p.textSize(16);
-            p.textAlign(p.CENTER, p.CENTER);
-            p.text("Search a city to see the weather", canvasW / 2, canvasH / 2);
-            return;
-          }
-
-          // Smooth lerp temperature for animation
-          displayTemp = p.lerp(displayTemp, targetTemp, 0.04);
-
           let cx = canvasW / 2;
           let cy = canvasH / 2;
 
-          // Pulsing glow rings
-          let baseSize = p.map(displayTemp, -20, 120, 30, 300, true);
-          let pulse = p.sin(p.frameCount * 0.02) * 8;
+          if (gamePhase === "guessing") {
+            // Mystery orb — pulsing question mark
+            let pulse = p.sin(p.frameCount * 0.03) * 10;
+            for (let i = 3; i >= 0; i--) {
+              let s = 100 + i * 25 + pulse;
+              let alpha = p.map(i, 0, 3, 35, 8);
+              p.fill(150, 150, 200, alpha);
+              p.ellipse(cx, cy, s, s);
+            }
+            p.fill(200, 200, 255, 120 + p.sin(p.frameCount * 0.04) * 30);
+            p.ellipse(cx, cy, 100, 100);
 
-          for (let i = 4; i >= 0; i--) {
-            let s = baseSize + i * 30 + pulse;
-            let alpha = p.map(i, 0, 4, 40, 5);
+            // Question mark
+            p.fill(255, 220);
+            p.textAlign(p.CENTER, p.CENTER);
+            p.textSize(40);
+            p.textStyle(p.BOLD);
+            p.text("?", cx, cy);
 
-            // Color based on temperature
-            let tempNorm = p.map(displayTemp, 0, 110, 0, 1, true);
-            let r = p.lerp(60, 250, tempNorm);
-            let g = p.lerp(165, 100, tempNorm);
-            let b = p.lerp(250, 80, tempNorm);
+            // City label
+            p.textSize(13);
+            p.textStyle(p.NORMAL);
+            p.fill(255, 80);
+            p.text("How hot or cold is it?", cx, cy + 70);
+          } else if (gamePhase === "revealed" && revealedTemp !== null) {
+            // Animate to actual temperature
+            displayTemp = p.lerp(displayTemp, revealedTemp, 0.06);
 
-            p.fill(r, g, b, alpha);
-            p.ellipse(cx, cy, s, s);
+            let baseSize = p.map(displayTemp, -20, 120, 40, 280, true);
+            let pulse = p.sin(p.frameCount * 0.025) * 6;
+
+            // Color based on result
+            let r, g, b;
+            if (resultType === "star") {
+              r = 250; g = 204; b = 21;
+            } else if (resultType === "cloud") {
+              r = 96; g = 165; b = 250;
+            } else {
+              r = 248; g = 113; b = 113;
+            }
+
+            // Glow rings
+            for (let i = 4; i >= 0; i--) {
+              let s = baseSize + i * 28 + pulse;
+              let alpha = p.map(i, 0, 4, 40, 6);
+              p.fill(r, g, b, alpha);
+              p.ellipse(cx, cy, s, s);
+            }
+
+            // Core
+            let coreAlpha = 160 + p.sin(p.frameCount * 0.03) * 30;
+            p.fill(r, g, b, coreAlpha);
+            p.ellipse(cx, cy, baseSize, baseSize);
+
+            // Inner glow
+            p.fill(255, 50 + p.sin(p.frameCount * 0.05) * 15);
+            p.ellipse(cx, cy, baseSize * 0.25, baseSize * 0.25);
+
+            // Particles
+            if (particles.length < 50 && p.random() < 0.35) {
+              particles.push({
+                x: cx + p.random(-baseSize / 2, baseSize / 2),
+                y: cy + p.random(-baseSize / 2, baseSize / 2),
+                size: p.random(1, 4),
+                vx: p.random(-0.5, 0.5),
+                vy: p.random(-1.5, -0.3),
+                life: 1.0,
+              });
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+              let pt = particles[i];
+              pt.x += pt.vx;
+              pt.y += pt.vy;
+              pt.life -= 0.009;
+              p.fill(r, g, b, pt.life * 100);
+              p.ellipse(pt.x, pt.y, pt.size, pt.size);
+              if (pt.life <= 0) particles.splice(i, 1);
+            }
+
+            // Temperature text
+            p.fill(255, 240);
+            p.textAlign(p.CENTER, p.CENTER);
+            p.textSize(38);
+            p.textStyle(p.BOLD);
+            p.text(Math.round(displayTemp) + "°F", cx, cy);
+
+            p.textSize(13);
+            p.textStyle(p.NORMAL);
+            p.fill(255, 130);
+            if (weather) {
+              p.text(weather.name + ", " + weather.sys.country, cx, cy + 28);
+              p.textSize(11);
+              p.fill(255, 80);
+              p.text(weather.weather[0].description, cx, cy + 46);
+            }
           }
 
-          // Core circle
-          let coreAlpha = 180 + p.sin(p.frameCount * 0.03) * 40;
-          let tempNorm = p.map(displayTemp, 0, 110, 0, 1, true);
-          let r = p.lerp(60, 250, tempNorm);
-          let g = p.lerp(165, 100, tempNorm);
-          let b = p.lerp(250, 80, tempNorm);
-          p.fill(r, g, b, coreAlpha);
-          p.ellipse(cx, cy, baseSize, baseSize);
-
-          // Inner bright core
-          p.fill(255, 60 + p.sin(p.frameCount * 0.05) * 20);
-          p.ellipse(cx, cy, baseSize * 0.3, baseSize * 0.3);
-
-          // Floating particles
-          if (particles.length < 60 && p.random() < 0.3) {
-            particles.push({
-              x: cx + p.random(-baseSize / 2, baseSize / 2),
-              y: cy + p.random(-baseSize / 2, baseSize / 2),
-              size: p.random(1, 4),
-              vx: p.random(-0.5, 0.5),
-              vy: p.random(-1.5, -0.3),
-              life: 1.0,
-            });
-          }
-
-          for (let i = particles.length - 1; i >= 0; i--) {
-            let pt = particles[i];
-            pt.x += pt.vx;
-            pt.y += pt.vy;
-            pt.life -= 0.008;
-
-            p.fill(r, g, b, pt.life * 120);
-            p.ellipse(pt.x, pt.y, pt.size, pt.size);
-
-            if (pt.life <= 0) particles.splice(i, 1);
-          }
-
-          // Temperature text
-          p.fill(255, 230);
-          p.textAlign(p.CENTER, p.CENTER);
-          p.textSize(42);
-          p.textStyle(p.BOLD);
-          p.text(Math.round(displayTemp) + "°F", cx, cy);
-
-          p.textSize(14);
+          // Floating emojis
           p.textStyle(p.NORMAL);
-          p.fill(255, 150);
-          p.text(weather.name + ", " + weather.sys.country, cx, cy + 30);
-
-          // Weather condition
-          p.textSize(12);
-          p.fill(255, 100);
-          p.text(weather.weather[0].description, cx, cy + 50);
+          for (let i = floatingEmojis.length - 1; i >= 0; i--) {
+            let em = floatingEmojis[i];
+            em.x += em.vx;
+            em.y += em.vy;
+            em.life -= 0.008;
+            p.textSize(em.size);
+            p.textAlign(p.CENTER, p.CENTER);
+            p.fill(255, em.life * 255);
+            p.text(em.emoji, em.x, em.y);
+            if (em.life <= 0) floatingEmojis.splice(i, 1);
+          }
         };
 
         p.windowResized = function () {
           canvasW = Math.min(700, window.innerWidth - 40);
-          p.resizeCanvas(canvasW, 380);
+          p.resizeCanvas(canvasW, 340);
         };
       };
 
